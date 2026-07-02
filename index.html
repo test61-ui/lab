@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>온도와 용해도 탐구</title>
+<style>
+  :root{
+    --bg:#f4f7fb;
+    --card:#ffffff;
+    --ink:#102033;
+    --sub:#4a6178;
+    --line:#d8e2ee;
+    --accent:#2563eb;
+    --good:#0f9d58;
+    --warn:#d97706;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    background:linear-gradient(180deg,#eef4fb 0%, #f9fbfe 100%);
+    color:var(--ink);
+  }
+  .wrap{
+    max-width:1200px;
+    margin:0 auto;
+    padding:16px;
+  }
+  h1{
+    margin:0 0 8px;
+    font-size:clamp(1.7rem, 3vw, 2.7rem);
+    line-height:1.2;
+  }
+  .subtitle{
+    font-size:clamp(1rem, 1.8vw, 1.25rem);
+    color:var(--sub);
+    margin-bottom:14px;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:14px;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:18px;
+    box-shadow:0 6px 18px rgba(20,40,70,.06);
+    padding:16px;
+  }
+  .controls{
+    display:grid;
+    grid-template-columns:repeat(12,1fr);
+    gap:14px;
+    align-items:end;
+  }
+  .control{
+    grid-column:span 12;
+  }
+  .control label{
+    display:block;
+    font-size:clamp(1rem,1.6vw,1.15rem);
+    font-weight:700;
+    margin-bottom:8px;
+  }
+  .control .value{
+    font-size:clamp(1rem,1.8vw,1.2rem);
+    color:var(--accent);
+    font-weight:800;
+    margin-left:8px;
+  }
+  select, input[type="range"], button{
+    width:100%;
+  }
+  select{
+    font-size:clamp(1rem, 1.8vw, 1.1rem);
+    padding:12px 14px;
+    border-radius:12px;
+    border:1px solid #b9c8da;
+    background:#fff;
+  }
+  input[type="range"]{
+    accent-color:var(--accent);
+    height:34px;
+  }
+  button{
+    font-size:clamp(1rem, 1.8vw, 1.1rem);
+    font-weight:800;
+    padding:12px 16px;
+    border:none;
+    border-radius:12px;
+    cursor:pointer;
+    color:#fff;
+    background:linear-gradient(180deg,#3b82f6,#2563eb);
+  }
+  button:hover{filter:brightness(1.04)}
+  .reset{
+    background:linear-gradient(180deg,#64748b,#475569);
+  }
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+  }
+  .stat{
+    padding:14px;
+    border-radius:14px;
+    background:#f8fbff;
+    border:1px solid var(--line);
+    min-height:110px;
+  }
+  .stat .k{
+    color:var(--sub);
+    font-size:clamp(.95rem,1.6vw,1.1rem);
+    font-weight:700;
+  }
+  .stat .v{
+    margin-top:8px;
+    font-size:clamp(1.3rem,2.4vw,2rem);
+    font-weight:900;
+  }
+  .stat .s{
+    margin-top:4px;
+    color:var(--sub);
+    font-size:clamp(.9rem,1.4vw,1rem);
+  }
+  .panels{
+    display:grid;
+    grid-template-columns:1.3fr .9fr;
+    gap:14px;
+  }
+  .panel-title{
+    font-size:clamp(1.15rem,2vw,1.35rem);
+    font-weight:900;
+    margin:0 0 10px;
+  }
+  .canvas-wrap{
+    width:100%;
+    aspect-ratio:16/10;
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:#fff;
+    overflow:hidden;
+  }
+  canvas{
+    width:100%;
+    height:100%;
+    display:block;
+  }
+  .concept{
+    font-size:clamp(1.05rem,1.8vw,1.25rem);
+    line-height:1.6;
+    background:#f7fbf7;
+    border-left:6px solid var(--good);
+  }
+  .concept strong{color:var(--good)}
+  .foot{
+    color:var(--sub);
+    font-size:clamp(.9rem,1.4vw,1rem);
+    line-height:1.5;
+  }
+  @media (max-width:980px){
+    .panels{grid-template-columns:1fr}
+    .stats{grid-template-columns:repeat(2,1fr)}
+  }
+  @media (min-width:760px){
+    .control.solute{grid-column:span 4}
+    .control.temp{grid-column:span 4}
+    .control.amount{grid-column:span 3}
+    .control.resetBox{grid-column:span 1}
+  }
+  @media (max-width:560px){
+    .stats{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>온도와 용해도 탐구</h1>
+      <div class="subtitle">물 100 g에 녹을 수 있는 최대 질량(용해도)을 온도에 따라 살펴보세요.</div>
+
+      <div class="controls">
+        <div class="control solute">
+          <label for="solute">용질 선택</label>
+          <select id="solute" aria-label="용질 선택">
+            <option value="kno3">질산칼륨 (KNO₃)</option>
+            <option value="cuso4">황산구리 (CuSO₄)</option>
+            <option value="nacl">염화나트륨 (NaCl)</option>
+            <option value="kcl">염화칼륨 (KCl)</option>
+          </select>
+        </div>
+
+        <div class="control temp">
+          <label for="temp">온도 <span id="tempValue" class="value">20 ℃</span></label>
+          <input id="temp" type="range" min="0" max="100" step="1" value="20" aria-label="온도">
+        </div>
+
+        <div class="control amount">
+          <label for="amount">넣은 양 <span id="amountValue" class="value">40 g</span></label>
+          <input id="amount" type="range" min="0" max="200" step="1" value="40" aria-label="넣은 양">
+        </div>
+
+        <div class="control resetBox">
+          <label>&nbsp;</label>
+          <button id="resetBtn" class="reset" aria-label="다시 시작">다시 시작</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:14px;">
+      <div class="stats">
+        <div class="stat">
+          <div class="k">현재 용해도</div>
+          <div class="v" id="solubilityNow">36.0 g</div>
+          <div class="s">기준: 물 100 g, 현재 온도에서</div>
+        </div>
+        <div class="stat">
+          <div class="k">녹은 양</div>
+          <div class="v" id="dissolvedNow">36.0 g</div>
+          <div class="s">용액 속에 녹아 있는 질량</div>
+        </div>
+        <div class="stat">
+          <div class="k">남은 고체</div>
+          <div class="v" id="undissolvedNow">4.0 g</div>
+          <div class="s">용해도를 넘어서 녹지 못한 질량</div>
+        </div>
+        <div class="stat">
+          <div class="k">변화 경향</div>
+          <div class="v" id="trendNow">증가</div>
+          <div class="s" id="trendDetail">온도가 올라갈수록 더 잘 녹습니다.</div>
+        </div>
+      </div>
+
+      <div class="panels">
+        <div class="card">
+          <div class="panel-title">용해도 그래프</div>
+          <div class="canvas-wrap">
+            <canvas id="graphCanvas"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="panel-title">비커 관찰</div>
+          <div class="canvas-wrap">
+            <canvas id="beakerCanvas"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="card concept">
+        <div id="conceptText"></div>
+      </div>
+
+      <div class="card foot">
+        자료는 대표적인 용해도 곡선의 근삿값입니다. 단위는 모두 <strong>g / 물 100 g</strong>이며, 그래프의 점은 현재 선택한 온도에서의 값을 뜻합니다.
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const data = {
+    kno3: {
+      name: "질산칼륨",
+      formula: "KNO₃",
+      color: "#2563eb",
+      pts: [
+        [0,13.3],[20,31.6],[40,63.9],[60,109.2],[80,169.0],[100,246.0]
+      ],
+      note: "온도가 올라갈수록 용해도가 매우 크게 증가합니다."
+    },
+    cuso4: {
+      name: "황산구리",
+      formula: "CuSO₄",
+      color: "#0ea5a4",
+      pts: [
+        [0,14.3],[20,20.7],[40,32.0],[60,47.0],[80,65.0],[100,83.0]
+      ],
+      note: "온도가 올라갈수록 용해도가 뚜렷하게 증가합니다."
+    },
+    nacl: {
+      name: "염화나트륨",
+      formula: "NaCl",
+      color: "#f59e0b",
+      pts: [
+        [0,35.7],[20,36.0],[40,36.6],[60,37.3],[80,38.4],[100,39.8]
+      ],
+      note: "온도가 올라가도 용해도 증가는 작습니다."
+    },
+    kcl: {
+      name: "염화칼륨",
+      formula: "KCl",
+      color: "#8b5cf6",
+      pts: [
+        [0,27.6],[20,34.0],[40,40.0],[60,45.8],[80,51.3],[100,56.7]
+      ],
+      note: "온도가 올라갈수록 용해도가 꾸준히 증가합니다."
+    }
+  };
+
+  const tempEl = document.getElementById("temp");
+  const amountEl = document.getElementById("amount");
+  const soluteEl = document.getElementById("solute");
+  const resetBtn = document.getElementById("resetBtn");
+
+  const tempValue = document.getElementById("tempValue");
+  const amountValue = document.getElementById("amountValue");
+  const solubilityNow = document.getElementById("solubilityNow");
+  const dissolvedNow = document.getElementById("dissolvedNow");
+  const undissolvedNow = document.getElementById("undissolvedNow");
+  const trendNow = document.getElementById("trendNow");
+  const trendDetail = document.getElementById("trendDetail");
+  const conceptText = document.getElementById("conceptText");
+
+  const graphCanvas = document.getElementById("graphCanvas");
+  const beakerCanvas = document.getElementById("beakerCanvas");
+  const gctx = graphCanvas.getContext("2d");
+  const bctx = beakerCanvas.getContext("2d");
+
+  function lerp(a,b,t){ return a + (b-a)*t; }
+
+  function getSolubility(key, t){
+    const pts = data[key].pts;
+    if (t <= pts[0][0]) return pts[0][1];
+    if (t >= pts[pts.length-1][0]) return pts[pts.length-1][1];
+    for(let i=0;i<pts.length-1;i++){
+      const [x1,y1] = pts[i];
+      const [x2,y2] = pts[i+1];
+      if (t >= x1 && t <= x2){
+        const p = (t - x1) / (x2 - x1);
+        return lerp(y1, y2, p);
+      }
+    }
+    return 0;
+  }
+
+  function getSlope(key, t){
+    const dt = 1;
+    const y1 = getSolubility(key, Math.max(0,t-dt));
+    const y2 = getSolubility(key, Math.min(100,t+dt));
+    return (y2 - y1) / Math.max(1, (Math.min(100,t+dt)-Math.max(0,t-dt)));
+  }
+
+  function fmt(x){
+    return (Math.round(x*10)/10).toFixed(1);
+  }
+
+  function resizeCanvas(canvas, ctx){
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+
+  function drawGraph(){
+    resizeCanvas(graphCanvas, gctx);
+    const w = graphCanvas.getBoundingClientRect().width;
+    const h = graphCanvas.getBoundingClientRect().height;
+    const m = {l:70, r:18, t:18, b:56};
+    const pw = w - m.l - m.r;
+    const ph = h - m.t - m.b;
+
+    gctx.clearRect(0,0,w,h);
+    gctx.fillStyle = "#ffffff";
+    gctx.fillRect(0,0,w,h);
+
+    const yMax = 260;
+    const xTo = x => m.l + (x/100)*pw;
+    const yTo = y => m.t + ph - (y/yMax)*ph;
+
+    gctx.strokeStyle = "#d7e1ec";
+    gctx.lineWidth = 1;
+
+    for(let x=0;x<=100;x+=20){
+      const xx = xTo(x);
+      gctx.beginPath();
+      gctx.moveTo(xx,m.t);
+      gctx.lineTo(xx,m.t+ph);
+      gctx.stroke();
+    }
+    for(let y=0;y<=yMax;y+=50){
+      const yy = yTo(y);
+      gctx.beginPath();
+      gctx.moveTo(m.l,yy);
+      gctx.lineTo(m.l+pw,yy);
+      gctx.stroke();
+    }
+
+    gctx.strokeStyle = "#4b5e73";
+    gctx.lineWidth = 2;
+    gctx.beginPath();
+    gctx.moveTo(m.l,m.t);
+    gctx.lineTo(m.l,m.t+ph);
+    gctx.lineTo(m.l+pw,m.t+ph);
+    gctx.stroke();
+
+    gctx.fillStyle = "#22384f";
+    gctx.font = "700 14px system-ui";
+    gctx.textAlign = "center";
+    for(let x=0;x<=100;x+=20){
+      gctx.fillText(String(x), xTo(x), h-26);
+    }
+    gctx.fillText("온도 (℃)", m.l + pw/2, h-6);
+
+    gctx.save();
+    gctx.translate(18, m.t + ph/2);
+    gctx.rotate(-Math.PI/2);
+    gctx.fillText("용해도 (g / 물 100 g)", 0, 0);
+    gctx.restore();
+
+    gctx.textAlign = "right";
+    for(let y=0;y<=yMax;y+=50){
+      gctx.fillText(String(y), m.l-8, yTo(y)+5);
+    }
+
+    const selected = soluteEl.value;
+    Object.keys(data).forEach(key=>{
+      const item = data[key];
+      const pts = item.pts;
+      gctx.beginPath();
+      pts.forEach((p,i)=>{
+        const xx = xTo(p[0]);
+        const yy = yTo(p[1]);
+        if(i===0) gctx.moveTo(xx,yy);
+        else gctx.lineTo(xx,yy);
+      });
+      gctx.strokeStyle = item.color;
+      gctx.lineWidth = (key===selected)?4:2;
+      gctx.globalAlpha = (key===selected)?1:0.35;
+      gctx.stroke();
+      gctx.globalAlpha = 1;
+    });
+
+    const t = +tempEl.value;
+    const currentY = getSolubility(selected, t);
+
+    gctx.strokeStyle = "#111827";
+    gctx.setLineDash([6,6]);
+    gctx.lineWidth = 1.5;
+    gctx.beginPath();
+    gctx.moveTo(xTo(t), m.t);
+    gctx.lineTo(xTo(t), m.t+ph);
+    gctx.stroke();
+    gctx.setLineDash([]);
+
+    gctx.fillStyle = data[selected].color;
+    gctx.beginPath();
+    gctx.arc(xTo(t), yTo(currentY), 7, 0, Math.PI*2);
+    gctx.fill();
+    gctx.strokeStyle = "#ffffff";
+    gctx.lineWidth = 2;
+    gctx.stroke();
+
+    const boxX = Math.min(m.l+pw-120, xTo(t)+12);
+    const boxY = Math.max(m.t+10, yTo(currentY)-36);
+    gctx.fillStyle = "rgba(255,255,255,0.95)";
+    roundRect(gctx, boxX, boxY, 116, 42, 10, true, false);
+    gctx.strokeStyle = "#c8d4e3";
+    roundRect(gctx, boxX, boxY, 116, 42, 10, false, true);
+    gctx.fillStyle = "#102033";
+    gctx.font = "700 13px system-ui";
+    gctx.textAlign = "left";
+    gctx.fillText(`${t} ℃`, boxX+10, boxY+16);
+    gctx.fillText(`${fmt(currentY)} g`, boxX+10, boxY+33);
+
+    drawLegend(w, h);
+  }
+
+  function drawLegend(w,h){
+    const items = Object.keys(data);
+    let x = 78, y = 18;
+    gctx.font = "700 13px system-ui";
+    items.forEach((key,i)=>{
+      const item = data[key];
+      gctx.fillStyle = item.color;
+      gctx.globalAlpha = (soluteEl.value===key)?1:0.5;
+      gctx.fillRect(x, y + i*18, 16, 6);
+      gctx.globalAlpha = 1;
+      gctx.fillStyle = "#22384f";
+      gctx.textAlign = "left";
+      gctx.fillText(item.name, x+22, y+6 + i*18);
+    });
+  }
+
+  function drawBeaker(){
+    resizeCanvas(beakerCanvas, bctx);
+    const w = beakerCanvas.getBoundingClientRect().width;
+    const h = beakerCanvas.getBoundingClientRect().height;
+    bctx.clearRect(0,0,w,h);
+
+    const key = soluteEl.value;
+    const item = data[key];
+    const temp = +tempEl.value;
+    const amount = +amountEl.value;
+    const sol = getSolubility(key, temp);
+    const dissolved = Math.min(amount, sol);
+    const undissolved = Math.max(0, amount - sol);
+
+    const bx = w*0.22, by = h*0.12, bw = w*0.56, bh = h*0.72;
+    const waterTop = by + bh*0.26;
+    const waterH = bh*0.64;
+
+    bctx.fillStyle = "#f5fbff";
+    bctx.fillRect(0,0,w,h);
+
+    bctx.strokeStyle = "#7b8fa6";
+    bctx.lineWidth = 4;
+    bctx.beginPath();
+    bctx.moveTo(bx,by);
+    bctx.lineTo(bx,by+bh);
+    bctx.lineTo(bx+bw,by+bh);
+    bctx.lineTo(bx+bw,by);
+    bctx.stroke();
+
+    const tintAlpha = Math.min(0.55, 0.14 + dissolved/260*0.5);
+    const rgb = hexToRgb(item.color);
+    bctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${tintAlpha})`;
+    bctx.fillRect(bx+2, waterTop, bw-4, waterH);
+
+    bctx.strokeStyle = "rgba(255,255,255,0.85)";
+    bctx.lineWidth = 3;
+    bctx.beginPath();
+    bctx.moveTo(bx+4, waterTop+2);
+    bctx.lineTo(bx+bw-4, waterTop+2);
+    bctx.stroke();
+
+    // dissolved particles
+    const particleCount = Math.round(Math.min(120, dissolved*0.65));
+    for(let i=0;i<particleCount;i++){
+      const px = bx + 10 + pseudo(i*31+7) * (bw-20);
+      const py = waterTop + 12 + pseudo(i*53+17) * (waterH-24);
+      const r = 1.5 + pseudo(i*71+5)*2.2;
+      bctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${0.35 + pseudo(i*19+9)*0.35})`;
+      bctx.beginPath();
+      bctx.arc(px, py, r, 0, Math.PI*2);
+      bctx.fill();
+    }
+
+    // undissolved crystals
+    const crystalCount = Math.round(Math.min(55, undissolved*0.5));
+    for(let i=0;i<crystalCount;i++){
+      const px = bx + 12 + pseudo(i*47+11) * (bw-24);
+      const py = by + bh - 8 - pseudo(i*67+21) * Math.min(36, 6 + undissolved*0.18);
+      const size = 4 + pseudo(i*29+2)*5;
+      bctx.fillStyle = item.color;
+      bctx.globalAlpha = 0.85;
+      diamond(bctx, px, py, size);
+      bctx.globalAlpha = 1;
+    }
+
+    bctx.fillStyle = "#102033";
+    bctx.font = "700 15px system-ui";
+    bctx.textAlign = "center";
+    bctx.fillText("물 100 g", bx+bw/2, by+bh+24);
+
+    bctx.font = "700 14px system-ui";
+    bctx.textAlign = "left";
+    bctx.fillStyle = "#22384f";
+    bctx.fillText(`${item.name}`, 16, 24);
+    bctx.fillText(`온도: ${temp} ℃`, 16, 46);
+    bctx.fillText(`넣은 양: ${fmt(amount)} g`, 16, 68);
+
+    bctx.fillStyle = item.color;
+    bctx.fillRect(16, h-56, 18, 10);
+    bctx.fillStyle = "#22384f";
+    bctx.fillText(`녹은 양: ${fmt(dissolved)} g`, 42, h-48);
+
+    bctx.fillStyle = "rgba(80,80,80,0.85)";
+    bctx.fillRect(16, h-28, 18, 10);
+    bctx.fillStyle = "#22384f";
+    bctx.fillText(`남은 고체: ${fmt(undissolved)} g`, 42, h-20);
+  }
+
+  function updateText(){
+    const key = soluteEl.value;
+    const item = data[key];
+    const t = +tempEl.value;
+    const amount = +amountEl.value;
+    const sol = getSolubility(key, t);
+    const dissolved = Math.min(amount, sol);
+    const undissolved = Math.max(0, amount - sol);
+    const slope = getSlope(key, t);
+
+    tempValue.textContent = `${t} ℃`;
+    amountValue.textContent = `${amount} g`;
+    solubilityNow.textContent = `${fmt(sol)} g`;
+    dissolvedNow.textContent = `${fmt(dissolved)} g`;
+    undissolvedNow.textContent = `${fmt(undissolved)} g`;
+
+    let trendWord = "증가";
+    let trendExplain = "온도가 올라갈수록 더 잘 녹습니다.";
+    if (slope < 0.02){
+      trendWord = "거의 일정";
+      trendExplain = "온도가 올라가도 변화가 매우 작습니다.";
+    } else if (slope < 0.3){
+      trendWord = "조금 증가";
+      trendExplain = "온도가 올라갈수록 조금 더 잘 녹습니다.";
+    } else if (slope < 1.2){
+      trendWord = "증가";
+      trendExplain = "온도가 올라갈수록 더 잘 녹습니다.";
+    } else {
+      trendWord = "크게 증가";
+      trendExplain = "온도가 올라갈수록 용해도가 빠르게 커집니다.";
+    }
+    trendNow.textContent = trendWord;
+    trendDetail.textContent = trendExplain;
+
+    const higher = Math.min(100, t + 20);
+    const solHigher = getSolubility(key, higher);
+    conceptText.innerHTML =
+      `<strong>확인할 개념</strong> — ${item.name}의 용해도는 ${t} ℃에서 <strong>${fmt(sol)} g / 물 100 g</strong>입니다. ` +
+      `${higher} ℃로 올리면 약 <strong>${fmt(solHigher)} g</strong>까지 녹을 수 있습니다. ` +
+      `${item.note} 따라서 <strong>온도가 높아질수록 많은 고체 용질이 더 많이 녹을 수 있음</strong>을 그래프와 비커에서 확인할 수 있습니다.` +
+      (item.name === "염화나트륨" ? " 다만 염화나트륨은 증가 폭이 작아서 다른 용질보다 변화가 덜 뚜렷합니다." : "");
+  }
+
+  function updateAll(){
+    updateText();
+    drawGraph();
+    drawBeaker();
+  }
+
+  function roundRect(ctx, x, y, w, h, r, fill, stroke){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    if(fill) ctx.fill();
+    if(stroke) ctx.stroke();
+  }
+
+  function diamond(ctx, x, y, s){
+    ctx.beginPath();
+    ctx.moveTo(x, y-s);
+    ctx.lineTo(x+s, y);
+    ctx.lineTo(x, y+s);
+    ctx.lineTo(x-s, y);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function hexToRgb(hex){
+    const v = hex.replace("#","");
+    return {
+      r: parseInt(v.substring(0,2),16),
+      g: parseInt(v.substring(2,4),16),
+      b: parseInt(v.substring(4,6),16)
+    };
+  }
+
+  function pseudo(n){
+    const x = Math.sin(n*12.9898) * 43758.5453;
+    return x - Math.floor(x);
+  }
+
+  tempEl.addEventListener("input", updateAll);
+  amountEl.addEventListener("input", updateAll);
+  soluteEl.addEventListener("input", updateAll);
+  resetBtn.addEventListener("click", ()=>{
+    soluteEl.value = "kno3";
+    tempEl.value = 20;
+    amountEl.value = 40;
+    updateAll();
+  });
+  window.addEventListener("resize", updateAll);
+
+  updateAll();
+})();
+</script>
+</body>
+</html>
